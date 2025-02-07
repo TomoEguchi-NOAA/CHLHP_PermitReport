@@ -15,7 +15,12 @@ data.Jan_Jun <- read_xlsx(path = "data/ALEXAK_Field Data 2024-01-09 to 2024-06-1
          "UAS_GroupSize") %>%
   filter(!is.na(Species))
 
-Spp.table <- data.frame(Species = c("E rob", "G gri", "T tru", "D cap", "B mus", "M nov"),
+Spp.table <- data.frame(Species = c("E rob", 
+                                    "G gri", 
+                                    "T tru", 
+                                    "D cap", 
+                                    "B mus", 
+                                    "M nov"),
                         CommonName = c("Gray whale",
                                        "Risso's dolphin",
                                        "Bottlenose dolphin",
@@ -33,15 +38,20 @@ data.Jan_Jun %>%
 
 data.Jun_Dec <- extract_take_data(2024, save.file = T)
 
+# sightings
 data.Jan_Jun.summary %>%
-  full_join(data.Jun_Dec$summary, by = "CommonName") %>%
+  full_join(data.Jun_Dec$sightings, by = "CommonName") %>%
   transmute(CommonName = CommonName,
             Best = ifelse(is.na(Best.x), 0, Best.x) + 
               ifelse(is.na(Best.y), 0, Best.y),
             Best.calves = ifelse(is.na(Best.calves.x), 0, Best.calves.x) + 
               ifelse(is.na(Best.calves.y), 0, Best.calves.y),
             n.sightings = ifelse(is.na(n.sightings.x), 0, n.sightings.x) + 
-              ifelse(is.na(n.sightings.y), 0, n.sightings.y)) -> data.all
+              ifelse(is.na(n.sightings.y), 0, n.sightings.y)) -> summary.all
 
+write.csv(summary.all, 
+          file = "data/sightings_take_numbers.csv")
+write.csv(data.Jun_Dec$sightings.data,
+          file = "data/sightings_Jun_Dec.csv")
 
-write.csv(data.all, file = "data/take_numbers.csv")
+# UAS flights

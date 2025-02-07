@@ -1,11 +1,11 @@
 # functions
 
 
-extract_take_data <- function(years, save.files = T, run.date = Sys.Date(), save.file = F){
+extract_take_data <- function(years, run.date = Sys.Date(), save.file = F){
   library(RODBC)
   library(tidyverse)
   
-  out.file.name <- paste0('data/take_report_', run.date, '.csv')
+  #out.file.name <- paste0('data/take_report_', run.date, '.csv')
   
   # load a couple databases through ODBC - new as of 2024-10-31 Tomo Eguchi
   con.boat <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=CetaceanHealth;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
@@ -21,34 +21,57 @@ extract_take_data <- function(years, save.files = T, run.date = Sys.Date(), save
   boat.vw.names <- boat.tbls$TABLE_NAME[grep(pattern = 'vw',
                                              boat.tbls$TABLE_NAME)]
   
-  # LIMS.tbls.names <- LIMS.tbls$TABLE_NAME[grep(pattern = 'tbl_',
-  #                                              LIMS.tbls$TABLE_NAME)]
-  # 
-  # LIMS.vw.names <- LIMS.tbls$TABLE_NAME[grep(pattern = 'vw_',
-  #                                            LIMS.tbls$TABLE_NAME)]
-  
-  # vw tables are useful because code is translated, e.g., species
   boat.sighting <- sqlQuery(con.boat, 'select * from vwSighting')
   boat.UAS <- sqlQuery(con.boat, 'select * from vwUASFlight')
   boat.survey <- sqlQuery(con.boat, 'select * from vwSurvey')
   
-  boat.sighting %>% 
-    select(SightingTime, Latitude, Longitude, CommonName,
-           MinEstimate, BestEstimate, MaxEstimate, 
-           MinCalvesEstimate, BestCalvesEstimate, MaxCalvesEstimate, Comments) %>%
-    filter(year(SightingTime) %in% years) -> sighting.data
+  boat.survey %>%
+    select(SurveyID, SurveyDate, PurposeName) -> survey.data
   
-  sighting.data %>%
+  boat.sighting %>% 
+    select(SurveyID, SightingID, 
+           SightingTime, Latitude, Longitude, CommonName,
+           MinEstimate, BestEstimate, MaxEstimate, 
+           MinCalvesEstimate, BestCalvesEstimate,
+           MaxCalvesEstimate) %>%
+    filter(year(SightingTime) %in% years) -> sightings.data
+  
+  sightings.data %>%
     group_by(CommonName) %>%
     summarize(Best = sum(BestEstimate, na.rm = T),
               Best.calves = sum(BestCalvesEstimate, na.rm = T),
-              n.sightings = n()) -> summary.data
+              n.sightings = n()) -> sightings.summary
   
-  if (save.file)
-    write.csv(summary.data, file = out.file.name)
+  boat.UAS %>%
+    select(SurveyID, SightingID, 
+           TargetCount, NonTargetCount) %>%
+    left_join(sightings.data,
+              by = c("SurveyID", "SightingID")) %>%
+    filter(!is.na(CommonName)) %>%
+    left_join(survey.data, by = "SurveyID") -> UAS.data
   
-  return(list(sightings = sighting.data,
-              summary = summary.data))
+  UAS.data %>%
+    group_by(SightingID) %>%
+    summarise(SightingTime = first(SightingTime),
+              Target = max(TargetCount, na.rm = T),
+              CommonName = first(CommonName),
+              Best = max(BestEstimate, na.rm = T),
+              BestCalves = max(BestCalvesEstimate, na.rm = T),
+              Purpose = first(PurposeName))-> UAS.summary
+
+  if (save.file){  
+    write.csv(sightings.summary, 
+              file = paste0("data/sightings_take_",
+                            Sys.Date(), ".csv"))
+    write.csv(UAS.summary, 
+              file = paste0("data/UAS_take_",
+                            Sys.Date(), ".csv"))
+  }  
+  
+  return(list(sightings.data = sightings.data,
+              sightings.summary = sightings.summary,
+              UAS.data = UAS.data,
+              UAS.summary = UAS.summary))
   
   odbcCloseAll()
 }
