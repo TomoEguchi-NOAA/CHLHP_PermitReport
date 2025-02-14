@@ -1,0 +1,47 @@
+---
+title: "Take report for coastal small boat surveys"
+format: docx
+editor: visual
+---
+
+```{r message=FALSE}
+#| echo: false
+
+rm(list = ls())
+library(tidyverse)
+
+source("CHLHP_PermitReport_fcns.R")
+
+year <- 2024
+# Extract the same information from the small boat database
+data.year <- extract_take_data(year)
+data.year$survey.data %>%
+  group_by(PurposeName) %>%
+  summarize(n = n()) -> survey.n
+
+# Coastal Tursiops only
+data.year$survey.data %>%
+  filter(PurposeName == "Coastal Tursiops") -> coastal.Ttru.survey
+
+data.year$sightings.data %>%
+  right_join(coastal.Ttru.survey, by = "SurveyID") -> sightings.coastal.Ttru
+  
+sightings.coastal.Ttru %>%
+  filter(CommonName == "California coastal bottlenose dolphin") -> sightings.Ttru
+
+data.year$UAS.data %>%
+  select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
+  right_join(coastal.Ttru.survey, by = "SurveyID") -> UAS.coastal.Ttru
+
+UAS.coastal.Ttru %>%
+  filter(CommonName == "California coastal bottlenose dolphin") %>%
+  group_by(SightingID) %>%
+  summarize(max.n = max(TargetCount, na.rm = T),
+            sum.n = sum(TargetCount, na.rm = T))-> UAS.Ttru.summary
+
+```
+
+## Take report
+### Coastal small boat surveys
+We conducted cetacean surveys from the R/V Alexa K using handheld cameras and uncrewed aerial systems (UAS). We used DJI Mavic 3 Pro. The primary surveys were (1) coastal cetacean surveys along the San Diego county coastline and (2) the gray whale photogrammetry survey in the Santa Barbara Channel. Within the first survey, we dedicated one day a month to photographically sampling coastal bottlenose dolphins* (*Tursiops truncatus*). We repeated the same survey `r survey.n %>% filter(PurposeName == "Coastal Tursiops") %>% pull(n)` times, and `r data.year$sightings.summary %>% filter(CommonName == "California coastal bottlenose dolphin") %>% pull(Best)` dolphins (`r data.year$sightings.summary %>% filter(CommonName == "California coastal bottlenose dolphin") %>% pull(Best.calves)` calves) were encountered. A total of `r sum(UAS.Ttru.summary$sum.n)` dolphins were found in the photographs and videos collected from UAS. Images have not been processed as of January 2025 and it is unknown how many dolphins have been photographed/videoed multiple times. This is a re-initiation of a similar study conducted from 1981 to 2014. We expect to continue regular surveys (near monthly as resources allow) of coastal bottlenose dolphins in the future. Data from these repeated surveys will be used to estimate survival rates and abundance of coastal bottlenose dolphins through capture-mark-recapture analysis, as well as other social and biological parameters, e.g., occurrence, movements, and individual associations. Other surveys along the San Diego coast included opportunistic photographic sampling of blue whales, gray whales, and other species (e.g., Risso’s dolphins).
+
