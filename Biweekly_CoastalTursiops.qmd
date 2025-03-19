@@ -1,0 +1,44 @@
+---
+title: "MMTD Biweekly coastal Tursiops field work report"
+format: docx
+editor: source
+---
+
+```{r message=FALSE}
+#| echo: false
+
+rm(list = ls())
+library(tidyverse)
+library(RODBC)
+
+#source("CHLHP_PermitReport_fcns.R")
+# load a couple databases through ODBC - new as of 2024-10-31 Tomo Eguchi
+con.boat <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=CetaceanHealth;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
+
+boat.tbls <- sqlTables(con.boat)
+boat.vw.names <- boat.tbls$TABLE_NAME[grep(pattern = 'vw',
+                                           boat.tbls$TABLE_NAME)]
+
+# Find the most recent survey
+boat.survey <- sqlQuery(con.boat, 'select * from vwSurvey')
+
+boat.survey %>%
+  select(SurveyID, SurveyDate, SurveyNumber, PurposeName) %>%
+  arrange(by = SurveyDate) -> survey.data
+
+Survey.ID <- survey.data[nrow(survey.data), "SurveyID"]  
+Survey.Date <- survey.data[nrow(survey.data), "SurveyDate"]
+
+sightings <- sqlQuery(con.boat, 'select * from vwSighting') %>%
+  filter(SurveyID == Survey.ID) 
+
+personnel <- sqlQuery(con.boat, 'select * from vwSurveyPersonnel') %>%
+  filter(SurveyID == Survey.ID) 
+  
+odbcClose(con.boat)
+```
+
+## Field work
+*Southern California Coastal Bottlenose Dolphin Survey, San Diego County, California, `r format(Survey.Date, format = "%d %B %Y")`*
+
+`r personnel$FullName`, aboard the R/V Alexa K, completed a survey between Oceanside and Scripps pier to collect photo-ID and body condition imagery of coastal bottlenose dolphins. An estimated `r sum(sightings$BestEstimate)` dolphins were recorded and photographed from the boat and drone. These surveys are conducted roughly monthly to catalog and estimate the abundance, survival rate and body condition of the coastal bottlenose dolphin population. These research activities were conducted under NOAA permit 22306. For additional information, contact Tomo Eguchi.
