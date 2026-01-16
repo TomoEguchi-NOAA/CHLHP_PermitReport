@@ -4,7 +4,7 @@ format: docx
 editor: visual
 ---
 
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE}
 #| echo: false
 
 rm(list = ls())
@@ -12,7 +12,7 @@ library(tidyverse)
 
 source("CHLHP_PermitReport_fcns.R")
 
-year <- 2024
+year <- 2025
 # Extract the same information from the small boat database
 data.year <- extract_take_data(year)
 data.year$survey.data %>%
@@ -39,10 +39,64 @@ UAS.coastal.Ttru %>%
   summarize(max.n = max(TargetCount, na.rm = T),
             sum.n = sum(TargetCount, na.rm = T))-> UAS.Ttru.summary
 
+
+# Channel Islands gray whales
+data.year$survey.data %>%
+  filter(PurposeName == "Channel Islands Gray Whales") -> CI.Erob.survey
+
+data.year$sightings.data %>%
+  right_join(CI.Erob.survey, by = "SurveyID") -> sightings.CI.Erob
+  
+sightings.CI.Erob %>%
+  filter(CommonName == "Gray whale") -> sightings.Erob
+
+data.year$UAS.data %>%
+  select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
+  right_join(CI.Erob.survey, by = "SurveyID") -> UAS.CI.Erob
+
+UAS.CI.Erob %>%
+  filter(CommonName == "Gray whale") %>%
+  group_by(SightingID) %>%
+  summarize(max.n = max(TargetCount, na.rm = T),
+            sum.n = sum(TargetCount, na.rm = T))-> UAS.Erob.summary
+
+data.year$survey.data %>%
+  filter(PurposeName == "SD Cetacean") -> SD.Cetacean.survey
+
+data.year$sightings.data %>%
+  right_join(SD.Cetacean.survey, by = "SurveyID") -> sightings.SD.Cetacean
+
+data.year$UAS.data %>%
+  select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
+  right_join(SD.Cetacean.survey, by = "SurveyID") -> UAS.SD.Cetacean
+  
+data.year$survey.data %>%
+  filter(PurposeName == "SCB eDNA sampling") -> SCB.eDNA.sampling
+
+data.year$sightings.data %>%
+  right_join(SCB.eDNA.sampling, by = "SurveyID") -> sightings.SCB.eDNA
+
+data.year$UAS.data %>%
+  select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
+  right_join(SCB.eDNA.sampling, by = "SurveyID") -> UAS.SCB.eDNA
+
 ```
 
 ## Take report
 
 ### Coastal small boat surveys
 
-We conducted cetacean surveys from the R/V Alexa K using handheld cameras and uncrewed aerial systems (UAS). We used DJI Mavic 3 Pro. The primary surveys were (1) coastal cetacean surveys along the San Diego county coastline and (2) the gray whale photogrammetry survey in the Santa Barbara Channel. Within the first survey, we dedicated one day a month to photographically sampling coastal bottlenose dolphins\* (*Tursiops truncatus*). We repeated the same survey `r survey.n %>% filter(PurposeName == "Coastal Tursiops") %>% pull(n)` times, and `r data.year$sightings.summary %>% filter(CommonName == "California coastal bottlenose dolphin") %>% pull(Best)` dolphins (`r data.year$sightings.summary %>% filter(CommonName == "California coastal bottlenose dolphin") %>% pull(Best.calves)` calves) were encountered. A total of `r sum(UAS.Ttru.summary$sum.n)` dolphins were found in the photographs and videos collected from UAS. Images have not been processed as of January 2025 and it is unknown how many dolphins have been photographed/videoed multiple times. This is a re-initiation of a similar study conducted from 1981 to 2014. We expect to continue regular surveys (near monthly as resources allow) of coastal bottlenose dolphins in the future. Data from these repeated surveys will be used to estimate survival rates and abundance of coastal bottlenose dolphins through capture-mark-recapture analysis, as well as other social and biological parameters, e.g., occurrence, movements, and individual associations. Other surveys along the San Diego coast included opportunistic photographic sampling of blue whales, gray whales, and other species (e.g., Risso’s dolphins).
+
+Cetacean surveys were conducted aboard the R/V Alexa K using handheld cameras and Uncrewed Aerial Systems (UAS), specifically the DJI Mavic 3 Pro. The scope of work encompassed: (1) dedicated coastal bottlenose dolphin surveys along the San Diego county coastline, (2) opportunistic coastal cetacean surveys, and (3) the gray whale photogrammetry survey in the Santa Barbara Channel. Additionally, the R/V Alexa K was deployed approximately monthly for eDNA water sampling, during which cetaceans of selected species were approached for photographic documentation.
+
+Coastal Bottlenose Dolphin Surveys (Dedicated)
+The dedicated coastal bottlenose dolphin survey was conducted `r survey.n %>% filter(PurposeName == "Coastal Tursiops") %>% pull(n)` times. These repeated surveys yielded `r sightings.Ttru %>% summarize(Best = sum(BestEstimate)) %>% pull(Best)` dolphin encounters (including `r sightings.Ttru %>% summarize(Best.calf = sum(BestCalvesEstimate, na.rm=T)) %>% pull(Best.calf)` calves). A total of `r sum(UAS.Ttru.summary$sum.n)` dolphins were documented in photographs and videos collected by UAS. As of January  `r year + 1`, image processing is incomplete, and the number of unique individuals photographed/videoed remains unknown. The data from these repeated surveys will be analyzed using capture-mark-recapture methods to estimate survival rates and abundance of coastal bottlenose dolphins. Furthermore, the data will be used to assess other social and biological parameters, such as occurrence, movements, and individual associations.
+
+During eDNA sampling trips, photographs were also collected from bottlenose dolphins (n = 32, 1 calf). No UAS overflights were conducted on these animals.
+
+Opportunistic Coastal Cetacean Surveys
+During opportunistic surveys along the San Diego county coastline, various species were encountered, including `r unique(sightings.SD.Cetacean$CommonName)`. Photographic identification data were collected from fin whales (n = `r sightings.SD.Cetacean %>% filter(CommonName == "Fin whale") %>% pull(BestEstimate)`) and gray whales (n = `r sightings.SD.Cetacean %>% filter(CommonName == "Gray whale") %>% pull(BestEstimate)`). For these whales, UAS vertical video was also collected to assess body conditions. Common dolphins were not approached.
+
+Gray Whale Photogrammetry Survey
+The other dedicated small-boat based effort was the vertical image sampling of Eastern Pacific gray whales in the Santa Barbara Channel. This survey took place from `r min(CI.Erob.survey$SurveyDate)`  to `r max(CI.Erob.survey$SurveyDate)`. Over `r nrow(CI.Erob.survey)` days on the water, the DJI Mavic 3 Pro was flown over a total of `r sum(UAS.Erob.summary$sum.n)` whales. Photogrammetric measurements have been derived for a subset of these whales.
+
