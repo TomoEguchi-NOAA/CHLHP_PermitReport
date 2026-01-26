@@ -12,7 +12,7 @@ library(tidyverse)
 
 source("CHLHP_PermitReport_fcns.R")
 
-year <- 2025
+year <- 2026
 # Extract the same information from the small boat database
 data.year <- extract_take_data(year)
 data.year$survey.data %>%
@@ -40,31 +40,35 @@ UAS.coastal.Ttru %>%
             sum.n = sum(TargetCount, na.rm = T))-> UAS.Ttru.summary
 
 
-# Channel Islands gray whales
-data.year$survey.data %>%
-  filter(PurposeName == "Channel Islands Gray Whales") -> CI.Erob.survey
-
-data.year$sightings.data %>%
-  right_join(CI.Erob.survey, by = "SurveyID") -> sightings.CI.Erob
-  
-sightings.CI.Erob %>%
-  filter(CommonName == "Gray whale") -> sightings.Erob
-
-data.year$UAS.data %>%
-  select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
-  right_join(CI.Erob.survey, by = "SurveyID") -> UAS.CI.Erob
-
-UAS.CI.Erob %>%
-  filter(CommonName == "Gray whale") %>%
-  group_by(SightingID) %>%
-  summarize(max.n = max(TargetCount, na.rm = T),
-            sum.n = sum(TargetCount, na.rm = T))-> UAS.Erob.summary
+# Channel Islands gray whales - this is only for before 2026 (2024 and 2025)
+# data.year$survey.data %>%
+#   filter(PurposeName == "Channel Islands Gray Whales") -> CI.Erob.survey
+# 
+# data.year$sightings.data %>%
+#   right_join(CI.Erob.survey, by = "SurveyID") -> sightings.CI.Erob
+#   
+# sightings.CI.Erob %>%
+#   filter(CommonName == "Gray whale") -> sightings.Erob
+# 
+# data.year$UAS.data %>%
+#   select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
+#   right_join(CI.Erob.survey, by = "SurveyID") -> UAS.CI.Erob
+# 
+# UAS.CI.Erob %>%
+#   filter(CommonName == "Gray whale") %>%
+#   group_by(SightingID) %>%
+#   summarize(max.n = max(TargetCount, na.rm = T),
+#             sum.n = sum(TargetCount, na.rm = T))-> UAS.Erob.summary
 
 data.year$survey.data %>%
   filter(PurposeName == "SD Cetacean") -> SD.Cetacean.survey
 
 data.year$sightings.data %>%
   right_join(SD.Cetacean.survey, by = "SurveyID") -> sightings.SD.Cetacean
+
+# Gray whales:
+sightings.SD.Cetacean %>%
+  filter(CommonName == "Gray whale") -> sightings.SD.GrayWhale
 
 data.year$UAS.data %>%
   select(-c("SurveyDate", "SurveyNumber", "PurposeName", "year")) %>%
