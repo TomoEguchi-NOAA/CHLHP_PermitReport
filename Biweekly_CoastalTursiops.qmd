@@ -13,8 +13,23 @@ library(RODBC)
 
 #source("CHLHP_PermitReport_fcns.R")
 # load a couple databases through ODBC - new as of 2024-10-31 Tomo Eguchi
-con.boat <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=CetaceanHealth;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
 
+connection.string <- function(database){
+  # return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-s;Database=",
+  #               database, ";Trusted_Connection=yes;TrustServerCertificate=yes;"))
+  
+  # return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-ut.nmfs.local;Database=",
+  #               database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
+  
+  return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-g.nmfs.local;Database=",
+                database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
+
+}
+
+# con.boat <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=CetaceanHealth;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
+
+boat.str <- connection.string("CetaceanHealth")
+con.boat <- odbcDriverConnect(boat.str)
 boat.tbls <- sqlTables(con.boat)
 boat.vw.names <- boat.tbls$TABLE_NAME[grep(pattern = 'vw',
                                            boat.tbls$TABLE_NAME)]
@@ -35,6 +50,8 @@ sightings <- sqlQuery(con.boat, 'select * from vwSighting') %>%
 personnel <- sqlQuery(con.boat, 'select * from vwSurveyPersonnel') %>%
   filter(SurveyID == Survey.ID) 
   
+UAS.flight <- sqlQuery(con.boat, 'select * from vwUASFlight')
+
 odbcClose(con.boat)
 ```
 
