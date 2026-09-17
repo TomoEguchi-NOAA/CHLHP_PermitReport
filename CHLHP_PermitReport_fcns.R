@@ -1,11 +1,27 @@
 # functions
 
 
+connection.string <- function(database){
+  # return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-s;Database=",
+  #               database, ";Trusted_Connection=yes;TrustServerCertificate=yes;"))
+  
+  # return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-ut.nmfs.local;Database=",
+  #               database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
+  
+  return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-g.nmfs.local;Database=",
+                database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
+  
+}
+
+
 get.spp.table <- function(){
   library(RODBC)
   library(tidyverse)
   
-  con.Common <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=SWFSCCommon;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
+  #con.Common <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=SWFSCCommon;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
+  
+  Common.string <- connection.string("SWFSCCommon") 
+  con.Common  <- odbcDriverConnect(Common.string)
   
   # Common.tbls <- sqlTables(con.Common)
   # Common.tbls.names <- Common.tbls$TABLE_NAME[grep(pattern = "tbl", 
@@ -25,7 +41,12 @@ extract_take_data <- function(years, run.date = Sys.Date()){
   #out.file.name <- paste0('data/take_report_', run.date, '.csv')
   
   # load a couple databases through ODBC - new as of 2024-10-31 Tomo Eguchi
-  con.boat <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=CetaceanHealth;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
+  #con.boat <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=CetaceanHealth;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
+  
+  # get Species table from Common 
+  boat.string <- connection.string("CetaceanHealth") 
+  con.boat  <- odbcDriverConnect(boat.string)
+  
   # LIMS <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=LIMS;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
   # 
   #boat.tbls <- sqlTables(con.boat)
@@ -55,9 +76,10 @@ extract_take_data <- function(years, run.date = Sys.Date()){
            MaxCalvesEstimate) %>%
     filter(year(SightingTime) %in% years) -> sightings.data
   
-  sightings.data[sightings.data$Calves == 0, c("MinCalvesEstimate",
-                                               "BestCalvesEstimate",
-                                               "MaxCalvesEstimate")] <- 0
+  sightings.data[which(sightings.data$Calves == 0), 
+                 c("MinCalvesEstimate",
+                   "BestCalvesEstimate",
+                   "MaxCalvesEstimate")] <- 0
   
   sightings.data %>%
     group_by(CommonName) %>%
