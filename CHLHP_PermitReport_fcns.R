@@ -1,24 +1,24 @@
 # functions
 
+# return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-s;Database=",
+#               database, ";Trusted_Connection=yes;TrustServerCertificate=yes;"))
+
+# return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-ut.nmfs.local;Database=",
+#               database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
+
 
 connection.string <- function(database){
-  # return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-s;Database=",
-  #               database, ";Trusted_Connection=yes;TrustServerCertificate=yes;"))
-  
-  # return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-ut.nmfs.local;Database=",
-  #               database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
-  
-  return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-g.nmfs.local;Database=",
+  return(paste0("Driver={ODBC Driver 18 for SQL Server};Server=swc-estrella-g;Database=",
                 database, ";Trusted_Connection=yes;Port=1433;TrustServerCertificate=yes;"))
   
 }
+
+#con.Common <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=SWFSCCommon;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
 
 
 get.spp.table <- function(){
   library(RODBC)
   library(tidyverse)
-  
-  #con.Common <- odbcDriverConnect(connection = "Driver=ODBC Driver 18 for SQL Server;Server=161.55.235.187; Database=SWFSCCommon;Uid=; Pwd=; trusted_connection=yes; Encrypt=Optional")
   
   Common.string <- connection.string("SWFSCCommon") 
   con.Common  <- odbcDriverConnect(Common.string)
